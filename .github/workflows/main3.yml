@@ -5,23 +5,35 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   download:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Download CSV
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download CSV to data folder
         run: |
-          curl -fL -o data.csv \
+          mkdir -p data
+          curl -fLsS -o data/usa_states_2014.csv \
             https://raw.githubusercontent.com/plotly/datasets/master/2014_usa_states.csv
 
       - name: Preview data
-        run: head -n 5 data.csv
+        run: head -n 5 data/usa_states_2014.csv
 
-      - name: Upload CSV
-        uses: actions/upload-artifact@v4
-        with:
-          name: downloaded-data
-          path: data.csv
+      - name: Commit and push CSV
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add data/usa_states_2014.csv
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update CSV data"
+            git push
+          fi
