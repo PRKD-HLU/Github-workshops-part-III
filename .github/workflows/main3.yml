@@ -1,0 +1,27 @@
+
+name: Download CSV data
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  download:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download CSV
+        run: |
+          curl -fL -o data.csv \
+            https://raw.githubusercontent.com/plotly/datasets/master/2014_usa_states.csv
+
+      - name: Preview data
+        run: head -n 5 data.csv
+
+      - name: Upload CSV
+        uses: actions/upload-artifact@v4
+        with:
+          name: downloaded-data
+          path: data.csv
