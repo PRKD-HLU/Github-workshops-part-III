@@ -1,0 +1,95 @@
+name: Power BI CSV validation
+
+ 
+
+on:
+
+  workflow_dispatch:
+
+    inputs:
+
+      csv_path:
+
+        description: "CSV input file path"
+
+        required: true
+
+        default: "data/sales.csv"
+
+ 
+
+permissions:
+
+  contents: read
+
+ 
+
+jobs:
+
+  validate:
+
+    runs-on: ubuntu-latest
+
+    env:
+
+      CSV_PATH: ${{ inputs.csv_path }}
+
+    steps:
+
+      - uses: actions/checkout@v4
+
+      - name: Validate Power BI input data
+
+        run: |
+
+          python - <<'PY'
+
+          import csv, os
+
+          from pathlib import Path
+
+          from datetime import date
+
+ 
+
+          path = Path(os.environ['CSV_PATH'])
+
+          if not path.is_file():
+
+              raise SystemExit(f'FAIL: missing file {path}')
+
+ 
+
+          with path.open(encoding='utf-8-sig', newline='') as f:
+
+              reader = csv.DictReader(f)
+
+              required = {'Date', 'Country', 'SalesAmount', 'Profit'}
+
+              if not required.issubset(reader.fieldnames or []):
+
+                  raise SystemExit('FAIL: missing required CSV columns')
+
+              rows = list(reader)
+
+ 
+
+          if not rows:
+
+              raise SystemExit('FAIL: CSV is empty')
+
+          for row in rows:
+
+              date.fromisoformat(row['Date'])
+
+              if not row['Country'].strip():
+
+                  raise SystemExit('FAIL: Country is blank')
+
+              float(row['SalesAmount'])
+
+              float(row['Profit'])
+
+          print(f'PASS: {len(rows)} rows, valid Power BI input')
+
+          PY
