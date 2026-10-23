@@ -1,0 +1,92 @@
+
+name: Power BI DAX checks on PR
+
+ 
+
+on:
+
+  pull_request:
+
+    branches: [main]
+
+    paths:
+
+      - "model/measures.dax"
+
+ 
+
+permissions:
+
+  contents: read
+
+ 
+
+jobs:
+
+  validate:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - uses: actions/checkout@v4
+
+      - name: Validate required DAX measures
+
+        run: |
+
+          python - <<'PY' > dax_validation_report.txt
+
+          import re
+
+          import sys
+
+          from pathlib import Path
+
+ 
+
+          content = Path('model/measures.dax').read_text(
+
+              encoding='utf-8')
+
+          required = ['Total Sales', 'Total Profit',
+
+                      'Profit Margin %']
+
+          missing = []
+
+          for name in required:
+
+              pattern = r'(?m)^\s*' + re.escape(name) + r'\s*='
+
+              if re.search(pattern, content):
+
+                  print(f'PASS: {name}')
+
+              else:
+
+                  print(f'FAIL: missing {name}')
+
+                  missing.append(name)
+
+          sys.exit(1 if missing else 0)
+
+          PY
+
+      - name: Print validation report
+
+        if: always()
+
+        run: cat dax_validation_report.txt
+
+      - name: Upload validation artifact
+
+        if: always()
+
+        uses: actions/upload-artifact@v4
+
+        with:
+
+          name: dax-validation-report
+
+          path: dax_validation_report.txt
